@@ -1,0 +1,326 @@
+[
+  {
+    "sliceName": "Create Database Schema",
+    "module": "Database Setup",
+    "description": "Create Prisma schema with Project and Estimate entities for multi-tenant estimation storage.",
+    "source": [
+      {
+        "userStory": "As a developer I need the database schema to store projects and estimates",
+        "acceptanceCriteria": "Prisma migrations created and applied successfully"
+      }
+    ],
+    "dependencies": ["Prisma ORM", "PostgreSQL"]
+  },
+  {
+    "sliceName": "List User Projects",
+    "module": "Project Management",
+    "description": "Implement project listing page showing all projects for the authenticated user's tenant.",
+    "source": [
+      {
+        "userStory": "As a user I can see all my projects",
+        "acceptanceCriteria": "returns list of projects filtered by tenant with name and creation date"
+      }
+    ],
+    "dependencies": ["Create Database Schema", "Kinde Auth middleware"]
+  },
+  {
+    "sliceName": "Create New Project",
+    "module": "Project Management",
+    "description": "Implement project creation form and API endpoint to create a new project container.",
+    "source": [
+      {
+        "userStory": "As a user I can create a new project",
+        "acceptanceCriteria": "returns 201 with new project ID and redirects to project page"
+      }
+    ],
+    "dependencies": ["Create Database Schema", "Kinde Auth middleware"]
+  },
+  {
+    "sliceName": "Parse CSV File",
+    "module": "CSV Processing",
+    "description": "Implement CSV parser that converts DevReady export into hierarchical JSON structure.",
+    "source": [
+      {
+        "userStory": "As a user I can upload a CSV file from DevReady",
+        "acceptanceCriteria": "parses CSV and returns structured JSON with modules, stories, and tasks"
+      }
+    ],
+    "dependencies": ["Zod validation"]
+  },
+  {
+    "sliceName": "Validate CSV Format",
+    "module": "CSV Processing",
+    "description": "Validate uploaded CSV has required columns and proper data format.",
+    "source": [
+      {
+        "userStory": "As a user I get clear error messages for invalid CSV files",
+        "acceptanceCriteria": "returns 400 with specific validation errors for malformed CSV"
+      }
+    ],
+    "dependencies": ["Parse CSV File", "Zod validation"]
+  },
+  {
+    "sliceName": "Upload CSV to Create Estimate",
+    "module": "Estimate Creation",
+    "description": "Implement file upload UI and API endpoint to create first estimate version from CSV.",
+    "source": [
+      {
+        "userStory": "As a user I can upload a CSV to create an initial estimate",
+        "acceptanceCriteria": "creates estimate v1 with parsed data and default rate card"
+      }
+    ],
+    "dependencies": ["Parse CSV File", "Validate CSV Format", "Create New Project"]
+  },
+  {
+    "sliceName": "Generate Default Rate Card",
+    "module": "Rate Management",
+    "description": "Create default rate card with standard roles and regions from parsed CSV data.",
+    "source": [
+      {
+        "userStory": "As a user I get default rates applied to my estimate",
+        "acceptanceCriteria": "extracts unique role/region pairs and assigns default rates"
+      }
+    ],
+    "dependencies": ["Parse CSV File"]
+  },
+  {
+    "sliceName": "Calculate Initial Totals",
+    "module": "Calculations",
+    "description": "Calculate total hours, cost, and price based on parsed data and rate card.",
+    "source": [
+      {
+        "userStory": "As a user I can see calculated totals immediately after upload",
+        "acceptanceCriteria": "displays accurate total hours, cost, and price with default margin"
+      }
+    ],
+    "dependencies": ["Generate Default Rate Card"]
+  },
+  {
+    "sliceName": "Display Estimate Summary",
+    "module": "Estimate Display",
+    "description": "Show estimate summary with total hours, cost, price, and applied margin.",
+    "source": [
+      {
+        "userStory": "As a user I can see the estimate summary",
+        "acceptanceCriteria": "displays totals prominently with margin percentage"
+      }
+    ],
+    "dependencies": ["Calculate Initial Totals"]
+  },
+  {
+    "sliceName": "Display Module Breakdown",
+    "module": "Estimate Display",
+    "description": "Show collapsible module list with stories, tasks, and hours breakdown.",
+    "source": [
+      {
+        "userStory": "As a user I can see the detailed task breakdown",
+        "acceptanceCriteria": "displays hierarchical view of modules, stories, and tasks with hours"
+      }
+    ],
+    "dependencies": ["Upload CSV to Create Estimate"]
+  },
+  {
+    "sliceName": "Edit Rate Card",
+    "module": "Rate Management",
+    "description": "Implement inline editing of hourly rates per role and region.",
+    "source": [
+      {
+        "userStory": "As a user I can adjust hourly rates",
+        "acceptanceCriteria": "updates rates and recalculates totals in real-time"
+      }
+    ],
+    "dependencies": ["Display Estimate Summary", "Display Module Breakdown"]
+  },
+  {
+    "sliceName": "Add Custom Rate",
+    "module": "Rate Management",
+    "description": "Allow adding new role/region rate combinations to the rate card.",
+    "source": [
+      {
+        "userStory": "As a user I can add custom role/region rates",
+        "acceptanceCriteria": "adds new rate entry and applies to matching tasks"
+      }
+    ],
+    "dependencies": ["Edit Rate Card"]
+  },
+  {
+    "sliceName": "Edit Task Hours",
+    "module": "Estimate Editing",
+    "description": "Enable inline editing of individual task hour estimates.",
+    "source": [
+      {
+        "userStory": "As a user I can adjust task hours",
+        "acceptanceCriteria": "updates hours and recalculates totals in real-time"
+      }
+    ],
+    "dependencies": ["Display Module Breakdown"]
+  },
+  {
+    "sliceName": "Edit Margin Percentage",
+    "module": "Estimate Editing",
+    "description": "Allow editing of the margin percentage applied to the total cost.",
+    "source": [
+      {
+        "userStory": "As a user I can adjust the margin percentage",
+        "acceptanceCriteria": "updates margin and recalculates total price in real-time"
+      }
+    ],
+    "dependencies": ["Display Estimate Summary"]
+  },
+  {
+    "sliceName": "Recalculate Totals Client-Side",
+    "module": "Calculations",
+    "description": "Implement client-side recalculation logic for instant feedback on changes.",
+    "source": [
+      {
+        "userStory": "As a user I see instant updates when I change values",
+        "acceptanceCriteria": "totals update immediately without server round-trip"
+      }
+    ],
+    "dependencies": ["Edit Rate Card", "Edit Task Hours", "Edit Margin Percentage"]
+  },
+  {
+    "sliceName": "Save New Version",
+    "module": "Version Management",
+    "description": "Save current state as a new estimate version with incremented version number.",
+    "source": [
+      {
+        "userStory": "As a user I can save my changes as a new version",
+        "acceptanceCriteria": "creates new version with all current values and optional note"
+      }
+    ],
+    "dependencies": ["Edit Rate Card", "Edit Task Hours", "Edit Margin Percentage"]
+  },
+  {
+    "sliceName": "Add Version Note",
+    "module": "Version Management",
+    "description": "Allow adding descriptive note when saving a new version.",
+    "source": [
+      {
+        "userStory": "As a user I can add a note describing what changed",
+        "acceptanceCriteria": "saves note with version for future reference"
+      }
+    ],
+    "dependencies": ["Save New Version"]
+  },
+  {
+    "sliceName": "List Estimate Versions",
+    "module": "Version Management",
+    "description": "Display dropdown list of all versions with timestamp and notes.",
+    "source": [
+      {
+        "userStory": "As a user I can see all versions of an estimate",
+        "acceptanceCriteria": "shows version number, date, creator, and note in dropdown"
+      }
+    ],
+    "dependencies": ["Save New Version"]
+  },
+  {
+    "sliceName": "Load Previous Version",
+    "module": "Version Management",
+    "description": "Load and display a selected previous version of the estimate.",
+    "source": [
+      {
+        "userStory": "As a user I can switch to view any previous version",
+        "acceptanceCriteria": "loads complete estimate state including rates and values"
+      }
+    ],
+    "dependencies": ["List Estimate Versions"]
+  },
+  {
+    "sliceName": "Validate Numeric Inputs",
+    "module": "Input Validation",
+    "description": "Validate all numeric inputs for hours, rates, and percentages.",
+    "source": [
+      {
+        "userStory": "As a user I cannot enter invalid numeric values",
+        "acceptanceCriteria": "prevents non-numeric input and shows validation errors"
+      }
+    ],
+    "dependencies": ["Edit Rate Card", "Edit Task Hours", "Edit Margin Percentage"]
+  },
+  {
+    "sliceName": "Handle Large CSV Files",
+    "module": "CSV Processing",
+    "description": "Implement file size limits and progress indication for large CSV uploads.",
+    "source": [
+      {
+        "userStory": "As a user I get feedback when uploading large files",
+        "acceptanceCriteria": "shows progress bar and enforces 10MB file size limit"
+      }
+    ],
+    "dependencies": ["Upload CSV to Create Estimate"]
+  },
+  {
+    "sliceName": "Display Error Messages",
+    "module": "Error Handling",
+    "description": "Show user-friendly error messages for all failure scenarios.",
+    "source": [
+      {
+        "userStory": "As a user I understand what went wrong when errors occur",
+        "acceptanceCriteria": "displays clear, actionable error messages"
+      }
+    ],
+    "dependencies": ["Validate CSV Format", "Validate Numeric Inputs"]
+  },
+  {
+    "sliceName": "Enforce Tenant Isolation",
+    "module": "Security",
+    "description": "Ensure users can only access projects and estimates within their tenant.",
+    "source": [
+      {
+        "userStory": "As a user I can only see my organization's data",
+        "acceptanceCriteria": "queries filter by tenant ID from auth context"
+      }
+    ],
+    "dependencies": ["List User Projects", "Kinde Auth middleware"]
+  },
+  {
+    "sliceName": "Create Navigation Header",
+    "module": "UI Layout",
+    "description": "Implement header with project name, version selector, and action buttons.",
+    "source": [
+      {
+        "userStory": "As a user I can navigate between projects and versions",
+        "acceptanceCriteria": "shows current project, version dropdown, save button"
+      }
+    ],
+    "dependencies": ["List Estimate Versions"]
+  },
+  {
+    "sliceName": "Create Summary Card",
+    "module": "UI Components",
+    "description": "Build summary card component showing key metrics and margin input.",
+    "source": [
+      {
+        "userStory": "As a user I can see key metrics at a glance",
+        "acceptanceCriteria": "displays hours, cost, price, and editable margin"
+      }
+    ],
+    "dependencies": ["Display Estimate Summary"]
+  },
+  {
+    "sliceName": "Create Rate Card Table",
+    "module": "UI Components",
+    "description": "Build editable table component for rate card management.",
+    "source": [
+      {
+        "userStory": "As a user I can easily edit rates in a table format",
+        "acceptanceCriteria": "shows role, region, rate with inline editing"
+      }
+    ],
+    "dependencies": ["Edit Rate Card"]
+  },
+  {
+    "sliceName": "Create Module Accordion",
+    "module": "UI Components",
+    "description": "Build collapsible accordion component for module/story/task hierarchy.",
+    "source": [
+      {
+        "userStory": "As a user I can expand/collapse modules for easier viewing",
+        "acceptanceCriteria": "toggles module visibility and shows subtotals"
+      }
+    ],
+    "dependencies": ["Display Module Breakdown"]
+  }
+]

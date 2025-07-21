@@ -1,0 +1,336 @@
+{
+  "comments": [
+    "Merged UI+backend slices where appropriate for cohesive features",
+    "Added error handling slices for each major operation",
+    "Added observability, logging, and admin features",
+    "Standardized naming to verb-first, present tense",
+    "Added security and cross-cutting concerns",
+    "Ensured dependencies only reference existing slices"
+  ],
+  "slices": [
+    {
+      "sliceName": "Configure Database Schema",
+      "module": "Infrastructure",
+      "description": "Create Prisma schema with Project and Estimate entities for multi-tenant estimation storage.",
+      "source": [
+        {
+          "userStory": "As a developer I need the database schema to store projects and estimates",
+          "acceptanceCriteria": "Prisma migrations created and applied successfully"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "sliceName": "Implement Multi-tenant Security",
+      "module": "Security",
+      "description": "Set up row-level security and tenant isolation in database and API layer.",
+      "source": [
+        {
+          "userStory": "As a user I can only see my organization's data",
+          "acceptanceCriteria": "queries filter by tenant ID from auth context"
+        }
+      ],
+      "dependencies": ["Configure Database Schema"]
+    },
+    {
+      "sliceName": "List Projects",
+      "module": "Project Management",
+      "description": "Show all projects for the authenticated user's tenant with filtering and sorting.",
+      "source": [
+        {
+          "userStory": "As a user I can see all my projects",
+          "acceptanceCriteria": "returns list of projects filtered by tenant with name and creation date"
+        }
+      ],
+      "dependencies": ["Configure Database Schema", "Implement Multi-tenant Security"]
+    },
+    {
+      "sliceName": "Handle Project Listing Errors",
+      "module": "Error Handling",
+      "description": "Display appropriate error states and retry options when project listing fails.",
+      "source": [
+        {
+          "userStory": "As a user I understand what went wrong when errors occur",
+          "acceptanceCriteria": "displays clear, actionable error messages"
+        }
+      ],
+      "dependencies": ["List Projects"]
+    },
+    {
+      "sliceName": "Create Project",
+      "module": "Project Management",
+      "description": "Create new project container with name, description, and tenant association.",
+      "source": [
+        {
+          "userStory": "As a user I can create a new project",
+          "acceptanceCriteria": "returns 201 with new project ID and redirects to project page"
+        }
+      ],
+      "dependencies": ["Configure Database Schema", "Implement Multi-tenant Security"]
+    },
+    {
+      "sliceName": "Handle Project Creation Errors",
+      "module": "Error Handling",
+      "description": "Validate project inputs and display clear error messages when creation fails.",
+      "source": [
+        {
+          "userStory": "As a user I understand what went wrong when errors occur",
+          "acceptanceCriteria": "displays clear, actionable error messages"
+        }
+      ],
+      "dependencies": ["Create Project"]
+    },
+    {
+      "sliceName": "Parse CSV Upload",
+      "module": "CSV Processing",
+      "description": "Upload, validate, and parse CSV files into structured JSON with progress indication.",
+      "source": [
+        {
+          "userStory": "As a user I can upload a CSV file from DevReady",
+          "acceptanceCriteria": "parses CSV and returns structured JSON with modules, stories, and tasks"
+        },
+        {
+          "userStory": "As a user I get clear error messages for invalid CSV files",
+          "acceptanceCriteria": "returns 400 with specific validation errors for malformed CSV"
+        },
+        {
+          "userStory": "As a user I get feedback when uploading large files",
+          "acceptanceCriteria": "shows progress bar and enforces 10MB file size limit"
+        }
+      ],
+      "dependencies": ["Create Project"]
+    },
+    {
+      "sliceName": "Handle CSV Parsing Failures",
+      "module": "Error Handling",
+      "description": "Show detailed validation errors and recovery options when CSV parsing fails.",
+      "source": [
+        {
+          "userStory": "As a user I get clear error messages for invalid CSV files",
+          "acceptanceCriteria": "returns 400 with specific validation errors for malformed CSV"
+        }
+      ],
+      "dependencies": ["Parse CSV Upload"]
+    },
+    {
+      "sliceName": "Generate Estimate",
+      "module": "Estimate Creation",
+      "description": "Create initial estimate version from CSV with default rate card and calculations.",
+      "source": [
+        {
+          "userStory": "As a user I can upload a CSV to create an initial estimate",
+          "acceptanceCriteria": "creates estimate v1 with parsed data and default rate card"
+        },
+        {
+          "userStory": "As a user I get default rates applied to my estimate",
+          "acceptanceCriteria": "extracts unique role/region pairs and assigns default rates"
+        },
+        {
+          "userStory": "As a user I can see calculated totals immediately after upload",
+          "acceptanceCriteria": "displays accurate total hours, cost, and price with default margin"
+        }
+      ],
+      "dependencies": ["Parse CSV Upload"]
+    },
+    {
+      "sliceName": "Display Estimate",
+      "module": "Estimate Display",
+      "description": "Show estimate with summary metrics, module breakdown, and collapsible sections.",
+      "source": [
+        {
+          "userStory": "As a user I can see the estimate summary",
+          "acceptanceCriteria": "displays totals prominently with margin percentage"
+        },
+        {
+          "userStory": "As a user I can see the detailed task breakdown",
+          "acceptanceCriteria": "displays hierarchical view of modules, stories, and tasks with hours"
+        },
+        {
+          "userStory": "As a user I can expand/collapse modules for easier viewing",
+          "acceptanceCriteria": "toggles module visibility and shows subtotals"
+        },
+        {
+          "userStory": "As a user I can see key metrics at a glance",
+          "acceptanceCriteria": "displays hours, cost, price, and editable margin"
+        }
+      ],
+      "dependencies": ["Generate Estimate"]
+    },
+    {
+      "sliceName": "Edit Rate Card",
+      "module": "Rate Management",
+      "description": "Edit existing rates and add new role/region combinations with instant recalculation.",
+      "source": [
+        {
+          "userStory": "As a user I can adjust hourly rates",
+          "acceptanceCriteria": "updates rates and recalculates totals in real-time"
+        },
+        {
+          "userStory": "As a user I can add custom role/region rates",
+          "acceptanceCriteria": "adds new rate entry and applies to matching tasks"
+        },
+        {
+          "userStory": "As a user I can easily edit rates in a table format",
+          "acceptanceCriteria": "shows role, region, rate with inline editing"
+        }
+      ],
+      "dependencies": ["Display Estimate"]
+    },
+    {
+      "sliceName": "Edit Task Hours",
+      "module": "Estimate Editing",
+      "description": "Edit individual task hours with inline validation and immediate recalculation.",
+      "source": [
+        {
+          "userStory": "As a user I can adjust task hours",
+          "acceptanceCriteria": "updates hours and recalculates totals in real-time"
+        }
+      ],
+      "dependencies": ["Display Estimate"]
+    },
+    {
+      "sliceName": "Edit Margin",
+      "module": "Estimate Editing",
+      "description": "Change margin percentage with validation and immediate price recalculation.",
+      "source": [
+        {
+          "userStory": "As a user I can adjust the margin percentage",
+          "acceptanceCriteria": "updates margin and recalculates total price in real-time"
+        }
+      ],
+      "dependencies": ["Display Estimate"]
+    },
+    {
+      "sliceName": "Validate Numeric Inputs",
+      "module": "Input Validation",
+      "description": "Enforce validation rules across all numeric inputs with immediate feedback.",
+      "source": [
+        {
+          "userStory": "As a user I cannot enter invalid numeric values",
+          "acceptanceCriteria": "prevents non-numeric input and shows validation errors"
+        }
+      ],
+      "dependencies": ["Edit Rate Card", "Edit Task Hours", "Edit Margin"]
+    },
+    {
+      "sliceName": "Calculate Estimate Totals",
+      "module": "Calculations",
+      "description": "Perform client-side calculation of all totals when any value changes.",
+      "source": [
+        {
+          "userStory": "As a user I see instant updates when I change values",
+          "acceptanceCriteria": "totals update immediately without server round-trip"
+        }
+      ],
+      "dependencies": ["Edit Rate Card", "Edit Task Hours", "Edit Margin"]
+    },
+    {
+      "sliceName": "Save Estimate Version",
+      "module": "Version Management",
+      "description": "Save current state as new version with incremented number and optional note.",
+      "source": [
+        {
+          "userStory": "As a user I can save my changes as a new version",
+          "acceptanceCriteria": "creates new version with all current values and optional note"
+        },
+        {
+          "userStory": "As a user I can add a note describing what changed",
+          "acceptanceCriteria": "saves note with version for future reference"
+        }
+      ],
+      "dependencies": ["Calculate Estimate Totals"]
+    },
+    {
+      "sliceName": "Handle Save Failures",
+      "module": "Error Handling",
+      "description": "Provide error handling, retry logic, and local backup for version save failures.",
+      "source": [
+        {
+          "userStory": "As a user I understand what went wrong when errors occur",
+          "acceptanceCriteria": "displays clear, actionable error messages"
+        }
+      ],
+      "dependencies": ["Save Estimate Version"]
+    },
+    {
+      "sliceName": "Manage Estimate Versions",
+      "module": "Version Management",
+      "description": "List, select, and load previous estimate versions with complete history.",
+      "source": [
+        {
+          "userStory": "As a user I can see all versions of an estimate",
+          "acceptanceCriteria": "shows version number, date, creator, and note in dropdown"
+        },
+        {
+          "userStory": "As a user I can switch to view any previous version",
+          "acceptanceCriteria": "loads complete estimate state including rates and values"
+        },
+        {
+          "userStory": "As a user I can navigate between projects and versions",
+          "acceptanceCriteria": "shows current project, version dropdown, save button"
+        }
+      ],
+      "dependencies": ["Save Estimate Version"]
+    },
+    {
+      "sliceName": "Handle Version Loading Errors",
+      "module": "Error Handling",
+      "description": "Gracefully handle and recover from version loading failures.",
+      "source": [
+        {
+          "userStory": "As a user I understand what went wrong when errors occur",
+          "acceptanceCriteria": "displays clear, actionable error messages"
+        }
+      ],
+      "dependencies": ["Manage Estimate Versions"]
+    },
+    {
+      "sliceName": "Log User Actions",
+      "module": "Observability",
+      "description": "Record all user actions for audit, troubleshooting, and analytics.",
+      "source": [
+        {
+          "userStory": "As an admin I can track user activity",
+          "acceptanceCriteria": "logs all create, edit, and save actions with timestamps and user IDs"
+        }
+      ],
+      "dependencies": ["Parse CSV Upload", "Save Estimate Version", "Edit Rate Card", "Edit Task Hours", "Edit Margin"]
+    },
+    {
+      "sliceName": "Implement Rate Limiting",
+      "module": "Security",
+      "description": "Apply rate limits to all API endpoints to prevent abuse.",
+      "source": [
+        {
+          "userStory": "As a system operator I want to prevent API abuse",
+          "acceptanceCriteria": "limits request frequency and returns 429 errors when exceeded"
+        }
+      ],
+      "dependencies": ["Configure Database Schema"]
+    },
+    {
+      "sliceName": "Create Admin Dashboard",
+      "module": "Administration",
+      "description": "Build admin view showing all projects, versions, and system metrics.",
+      "source": [
+        {
+          "userStory": "As an admin I can monitor system usage",
+          "acceptanceCriteria": "displays project counts, version counts, and user activity"
+        }
+      ],
+      "dependencies": ["Log User Actions", "List Projects"]
+    },
+    {
+      "sliceName": "Support Admin Operations",
+      "module": "Administration",
+      "description": "Allow admins to view any project, troubleshoot errors, and retry operations.",
+      "source": [
+        {
+          "userStory": "As an admin I can help users with issues",
+          "acceptanceCriteria": "provides admin override for access, retry, and diagnostics"
+        }
+      ],
+      "dependencies": ["Create Admin Dashboard"]
+    }
+  ]
+}
